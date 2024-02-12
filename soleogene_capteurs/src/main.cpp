@@ -70,13 +70,13 @@ float calculateSensorCurrentOuput(float voltageOutput, float resistance)
   return (voltageOutput/resistance);
 }
 bool manometerVerifications(float voltage) {
-  //1V = 0PcurrentSI
+  //1V = 0PSI
   //5V = 250PSI
-float pressure = (voltage-1)*250.0/4;
-float buffer = 5.0;//PSI
+float pressure = (voltage-1)*250.0/4; //Pressure in PSI
+float bufferPressure = 5.0;
 
 //Valider la mesure de pression et faire l'opération voulue
-  if(voltage <= 1 || pressure > (250.0 + buffer))
+  if(voltage <= 1 || pressure > (200.0 + bufferPressure))
   {
     return true;
   }
@@ -84,6 +84,7 @@ float buffer = 5.0;//PSI
     return false;
   }
 }
+
 bool flowmeterVerifications(float current)
 {
   //Put flowmeter verifications when clarified

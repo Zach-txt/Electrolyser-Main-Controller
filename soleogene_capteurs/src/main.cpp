@@ -48,7 +48,7 @@ void loop() {
   Serial.print("Lecture de flowmeter : ");
   displaySensorValues(flowmeterVoltage,flowmeterCurrent);
 
-
+//Message to git : 
   delay(5000);
 }
 

@@ -2,39 +2,43 @@
 
 
 // put function declarations here:
-int myFunction(int, int);
 bool manometerVerifications(float current);
 bool flowmeterVerifications(float current);
 void electrolyserProtection(bool sensor1, bool sensor2);
 void displaySensorValues(float voltage, float current);
 void setRelayState(bool currentState);
 bool getRelayState(void);
+float calculateAnalog2DigitalVoltage(int analogPin,int numberOfBits);
+float calculateSensorCurrentOuput(float voltageOutput, float resistance);
 
 //Constantes et variables globales
-const int manoPin = A0;
-const int flowmeterPin = A1;
-const int relayCommandPin = 23; //Digital Pin de commande 
+const int MANOMETERPIN = A0;
+const int FLOWMETERPIN = A1;
+const int RELAYCOMMANDPIN = 23; //Digital Pin de commande
+const float MANOMETERRESISTANCE = 250.0; 
+const float FLOWMETERRESISTANCE = 250.0; 
 
-bool manoVerif = false;
-bool flowVerif = false;
 bool relayState = false;
+
 void setup() {
   //Relay Set up
-  pinMode(relayCommandPin, OUTPUT);
+  pinMode(RELAYCOMMANDPIN, OUTPUT);
   setRelayState(false);
   Serial.begin(9600);
 }
 
 void loop() {
-  // Lecture du manomèetre
-  int sensor_Mano_Value = analogRead(manoPin);
-  float manoVoltage = (sensor_Mano_Value*5.0)/1023.0;
-  float manoCurrent = manoVoltage/250.0;
+  //Variables volatiles
+  bool manoVerif = false;
+  bool flowVerif = false;
+
+  // Lecture du manomètre
+  float manometerVoltage = calculateAnalog2DigitalVoltage(MANOMETERPIN,10);
+  float manoCurrent = calculateSensorCurrentOuput(manometerVoltage, MANOMETERRESISTANCE);
 
   //Lecture de Flowmeter
-  int sensor_Flowmeter_Value = analogRead(flowmeterPin);
-  float flowmeterVoltage = (sensor_Flowmeter_Value*5.0)/1023.0;
-  float flowmeterCurrent = flowmeterVoltage/250.0;
+  float flowmeterVoltage = calculateAnalog2DigitalVoltage(FLOWMETERPIN,10);
+  float flowmeterCurrent = calculateSensorCurrentOuput(flowmeterVoltage, FLOWMETERRESISTANCE);
 
   //Relay manipulations
   manoVerif = manometerVerifications(manoCurrent); //Look at Manometer sensor state
@@ -43,7 +47,7 @@ void loop() {
   electrolyserProtection(manoVerif,flowVerif);
  
   Serial.print("Lecture de manometre : ");
-  displaySensorValues(manoVoltage,manoCurrent);
+  displaySensorValues(manometerVoltage,manoCurrent);
 
   Serial.print("Lecture de flowmeter : ");
   displaySensorValues(flowmeterVoltage,flowmeterCurrent);
@@ -53,6 +57,18 @@ void loop() {
 }
 
 // put function definitions here:
+float calculateAnalog2DigitalVoltage(int analogPin,int numberofBits)
+{
+  float total = 2^numberofBits;
+  float analogValue = analogRead(analogPin);
+
+  return ((analogValue*5.0)/total);
+}
+
+float calculateSensorCurrentOuput(float voltageOutput, float resistance)
+{
+  return (voltageOutput/resistance);
+}
 bool manometerVerifications(float voltage) {
   //1V = 0PcurrentSI
   //5V = 250PSI
@@ -80,12 +96,12 @@ void setRelayState(bool state)
   if(relayState == true)
   {
     //Opens the realy
-    digitalWrite(relayCommandPin, HIGH);
+    digitalWrite(RELAYCOMMANDPIN, HIGH);
   }
   else
   {
     //Close the relay
-    digitalWrite(relayCommandPin, LOW);
+    digitalWrite(RELAYCOMMANDPIN, LOW);
   }
 }
 bool getRelayState(void)
@@ -106,12 +122,12 @@ void displaySensorValues(float voltage, float current)
 void electrolyserProtection(bool sensor1, bool sensor2)
 {
   //Minimise le nombre d'ouverture/fermreture du relai.
- if((manoVerif == true || flowVerif == true) && relayState == false)
-    {
-      setRelayState(true);
-    }
-  if((manoVerif == false && flowVerif == false) && relayState == true)
-    {
-      setRelayState(false);
-    }  
+ //if((manoVerif == true || flowVerif == true) && relayState == false)
+ //   {
+ //     setRelayState(true);
+ //   }
+ // if((manoVerif == false && flowVerif == false) && relayState == true)
+ //   {
+ //     setRelayState(false);
+ //   }  
 }

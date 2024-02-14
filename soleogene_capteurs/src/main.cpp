@@ -2,23 +2,30 @@
 
 
 // put function declarations here:
-bool manometerVerifications(float current);
-bool flowmeterVerifications(float current);
-void electrolyserProtection(bool sensor1, bool sensor2);
-void displaySensorValues(float voltage, float current);
+bool manometerPressureIsOK(float current);
+bool flowmeterFlowIsOK(float current);
+void electrolyserProtectionActions(bool sensor1, bool sensor2);
+void displayVoltageCurrentSensorValues(float voltage, float current);
+void displaySensorValues(float pressure, float flow);
 void setRelayState(bool currentState);
 bool getRelayState(void);
 float calculateAnalog2DigitalVoltage(int analogPin,int numberOfBits);
 float calculateSensorCurrentOuput(float voltageOutput, float resistance);
 
-//Constantes et variables globales
+//Constantes
+//ANALOG PINS
 const int MANOMETERPIN = A0;
 const int FLOWMETERPIN = A1;
-const int RELAYCOMMANDPIN = 23; //Digital Pin de commande
+
+//DIGITAL PINS
+const int RELAYCOMMANDPIN = 23; 
+
+//Valeurs de mesure
 const float MANOMETERRESISTANCE = 250.0; 
 const float FLOWMETERRESISTANCE = 250.0; 
 
-bool relayState = false;
+//Variables globales
+bool RELAYSTATEFLAG= false;
 
 void setup() {
   //Relay Set up
@@ -41,16 +48,16 @@ void loop() {
   float flowmeterCurrent = calculateSensorCurrentOuput(flowmeterVoltage, FLOWMETERRESISTANCE);
 
   //Relay manipulations
-  manoVerif = manometerVerifications(manoCurrent); //Look at Manometer sensor state
-  flowVerif = flowmeterVerifications(flowmeterCurrent);
+  manoVerif = manometerPressureIsOK(manoCurrent); //Look at Manometer sensor state
+  flowVerif = flowmeterFlowIsOK(flowmeterCurrent);
 
-  electrolyserProtection(manoVerif,flowVerif);
- 
+  electrolyserProtectionActions(manoVerif,flowVerif);
+  
   Serial.print("Lecture de manometre : ");
-  displaySensorValues(manometerVoltage,manoCurrent);
+  displayVoltageCurrentSensorValues(manometerVoltage,manoCurrent);
 
   Serial.print("Lecture de flowmeter : ");
-  displaySensorValues(flowmeterVoltage,flowmeterCurrent);
+  displayVoltageCurrentSensorValues(flowmeterVoltage,flowmeterCurrent);
 
 
   delay(5000);
@@ -69,14 +76,15 @@ float calculateSensorCurrentOuput(float voltageOutput, float resistance)
 {
   return (voltageOutput/resistance);
 }
-bool manometerVerifications(float voltage) {
-  //1V = 0PSI
-  //5V = 250PSI
-float pressure = (voltage-1)*250.0/4; //Pressure in PSI
+
+bool manometerPressureIsOK(float voltage) {
+  //1V = 0 PSI
+  //5V = 250 PSI
+float pressurePSI = (voltage-1)*250.0/4; 
 float bufferPressure = 5.0;
 
 //Valider la mesure de pression et faire l'opération voulue
-  if(voltage <= 1 || pressure > (200.0 + bufferPressure))
+  if(voltage <= 1 || pressurePSI > (200.0 + bufferPressure))
   {
     return true;
   }
@@ -85,7 +93,7 @@ float bufferPressure = 5.0;
   }
 }
 
-bool flowmeterVerifications(float current)
+bool flowmeterFlowIsOK(float current)
 {
   //Put flowmeter verifications when clarified
   return false;
@@ -93,8 +101,8 @@ bool flowmeterVerifications(float current)
 
 void setRelayState(bool state)
 {
-  relayState = state;
-  if(relayState == true)
+  RELAYSTATEFLAG= state;
+  if(RELAYSTATEFLAG== true)
   {
     //Opens the realy
     digitalWrite(RELAYCOMMANDPIN, HIGH);
@@ -107,9 +115,9 @@ void setRelayState(bool state)
 }
 bool getRelayState(void)
 {
-  return relayState;
+  return RELAYSTATEFLAG;
 }
-void displaySensorValues(float voltage, float current)
+void displayVoltageCurrentSensorValues(float voltage, float current)
 {
   Serial.print("Voltage (V) : ");
   Serial.print(voltage);
@@ -119,16 +127,26 @@ void displaySensorValues(float voltage, float current)
   Serial.print(current);
   Serial.print("\n");
 }
+void displaySensorValues(float pressure, float flow)
+{
+    Serial.print("Pressure (PSI) : ");
+  Serial.print(pressure);
+  Serial.print(" ");
 
-void electrolyserProtection(bool sensor1, bool sensor2)
+  Serial.print("Current (mA) : ");
+  Serial.print(flow);
+  Serial.print("\n");
+}
+
+void electrolyserProtectionActions(bool sensor1, bool sensor2)
 {
   //Minimise le nombre d'ouverture/fermreture du relai.
- //if((manoVerif == true || flowVerif == true) && relayState == false)
- //   {
- //     setRelayState(true);
- //   }
- // if((manoVerif == false && flowVerif == false) && relayState == true)
- //   {
- //     setRelayState(false);
- //   }  
+ if((sensor1 == true || sensor2 == true) && RELAYSTATEFLAG== false)
+    {
+      setRelayState(true);
+    }
+  if((sensor1 == false && sensor2 == false) && RELAYSTATEFLAG== true)
+    {
+      setRelayState(false);
+    }  
 }
